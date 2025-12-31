@@ -21,7 +21,7 @@ extern crate alloc;
 use embedded_alloc::TlsfHeap as Heap;
 
 use sacn::packet::{
-    SynchronizationPacketFramingLayer, UniverseDiscoveryPacketFramingLayer,
+    AcnRootLayerProtocol, SynchronizationPacketFramingLayer, UniverseDiscoveryPacketFramingLayer,
     UniverseDiscoveryPacketUniverseDiscoveryLayer, universe_to_ipv4_multicast_addr,
 };
 use static_cell::StaticCell;
@@ -89,42 +89,24 @@ async fn sacn_listener(mut stack: Stack<'static>) {
         socket.recv_from(&mut buf).await.unwrap();
         match sacn::packet::AcnRootLayerProtocol::parse(&buf) {
             Ok(acn) => {
+                info!("[acn]: {}", acn);
                 let pdu = acn.pdu;
                 let data = pdu.data;
                 match data {
                     sacn::packet::E131RootLayerData::DataPacket(data) => {
-                        info!(
-                            "[data] uni: {}, seq: {}",
-                            data.universe, data.sequence_number,
-                        );
-                        info!("dmx: {}", data.data.property_values.as_ref());
+                        info!("[data]: {}", data,);
                     }
-                    sacn::packet::E131RootLayerData::SynchronizationPacket(
-                        SynchronizationPacketFramingLayer {
-                            sequence_number,
-                            synchronization_address,
-                        },
-                    ) => {
-                        info!(
-                            "[sync] seq: {}, address: {}",
-                            sequence_number, synchronization_address
-                        );
+                    sacn::packet::E131RootLayerData::SynchronizationPacket(sync) => {
+                        info!("[sync]: {}", sync);
                     }
-                    sacn::packet::E131RootLayerData::UniverseDiscoveryPacket(
-                        UniverseDiscoveryPacketFramingLayer { source_name, data },
-                    ) => {
+                    sacn::packet::E131RootLayerData::UniverseDiscoveryPacket(disco) => {
+                        info!("[disco]: {}", disco);
+                        let UniverseDiscoveryPacketFramingLayer { source_name, data } = disco;
                         let UniverseDiscoveryPacketUniverseDiscoveryLayer {
                             page,
                             last_page,
                             universes,
                         } = data;
-                        info!(
-                            "[discovery] source: {}, page: {}, last_page: {}, universes: {}",
-                            source_name.as_ref(),
-                            page,
-                            last_page,
-                            universes.as_ref()
-                        );
                         for universe in universes.iter() {
                             if let Ok(addr) = universe_to_ipv4_multicast_addr(*universe)
                                 && !stack.has_multicast_group(*addr.ip())
