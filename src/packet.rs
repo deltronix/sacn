@@ -413,6 +413,7 @@ fn parse_source_name_str(buf: &[u8]) -> Result<&str> {
 
 /// Root layer protocol of the Architecture for Control Networks (ACN) protocol.
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct AcnRootLayerProtocol<'a> {
     /// The PDU this packet carries.
     pub pdu: E131RootLayer<'a>,
@@ -561,6 +562,7 @@ trait Pdu: Sized {
 
 /// Payload of the Root Layer PDU.
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum E131RootLayerData<'a> {
     /// DMX data packet.
     DataPacket(DataPacketFramingLayer<'a>),
@@ -574,8 +576,10 @@ pub enum E131RootLayerData<'a> {
 
 /// Root layer protocol data unit (PDU).
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct E131RootLayer<'a> {
     /// Sender UUID.
+    #[cfg_attr(feature = "defmt", defmt(Display2Format))]
     pub cid: Uuid,
     /// Data carried by the Root Layer PDU.
     pub data: E131RootLayerData<'a>,
@@ -711,8 +715,10 @@ impl<'a> Pdu for E131RootLayer<'a> {
 
 /// Framing layer PDU for sACN data packets.
 #[derive(Eq, PartialEq, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct DataPacketFramingLayer<'a> {
     /// The name of the source.
+    #[cfg_attr(feature = "defmt", defmt(Display2Format))]
     pub source_name: Cow<'a, str>,
 
     /// Priority of this data packet.
@@ -946,6 +952,13 @@ pub struct DataPacketDmpLayer<'a> {
     pub property_values: Cow<'a, [u8]>,
 }
 
+#[cfg(feature = "defmt")]
+impl<'a> defmt::Format for DataPacketDmpLayer<'a> {
+    fn format(&self, fmt: defmt::Formatter) {
+        defmt::write!(fmt, "{}", self.property_values.as_ref());
+    }
+}
+
 // Calculate the indexes of the fields within the buffer based on the size of the fields previous.
 // Constants are replaced inline so this increases readability by removing magic numbers without affecting runtime performance.
 // Theses indexes are only valid within the scope of this part of the protocol (DataPacketDmpLayer).
@@ -1122,6 +1135,7 @@ impl<'a> Hash for DataPacketDmpLayer<'a> {
 
 /// sACN synchronization packet PDU.
 #[derive(Clone, Eq, PartialEq, Hash, Debug, Copy)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct SynchronizationPacketFramingLayer {
     /// The sequence number of the packet.
     pub sequence_number: u8,
@@ -1246,6 +1260,7 @@ impl Pdu for SynchronizationPacketFramingLayer {
 
 /// Framing layer PDU for sACN universe discovery packets.
 #[derive(Eq, PartialEq, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct UniverseDiscoveryPacketFramingLayer<'a> {
     /// Name of the source.
     pub source_name: Cow<'a, str>,
@@ -1394,6 +1409,18 @@ pub struct UniverseDiscoveryPacketUniverseDiscoveryLayer<'a> {
 
     /// List of universes.
     pub universes: Cow<'a, [u16]>,
+}
+#[cfg(feature = "defmt")]
+impl<'a> defmt::Format for UniverseDiscoveryPacketUniverseDiscoveryLayer<'a> {
+    fn format(&self, fmt: defmt::Formatter) {
+        defmt::write!(
+            fmt,
+            "UniverseDiscoveryPacketUniverseDiscoveryLayer {{ page: {=u8}, last_page: {=u8}, universes: {=[?]} }}",
+            self.page,
+            self.last_page,
+            self.universes.as_ref()
+        )
+    }
 }
 
 // Calculate the indexes of the fields within the buffer based on the size of the fields previous.

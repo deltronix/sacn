@@ -27,6 +27,7 @@ libc = { version = "0.2.171" }
 socket2 = { version = "0.6.1", features = ["all"], optional = true }
 thiserror = { version = "2.0.0", default-features = false }
 uuid = { version = "1.12", features = ["v4"], default-features = false }
+defmt = { version = "1.0.1", features = ["alloc"], optional = true }
 
 [dev-dependencies]
 crossterm = "0.29.0"
@@ -35,6 +36,7 @@ serial_test = { version = "3.2.0", features = ["file_locks"] }
 [features]
 default = ["std"]
 std = ["dep:socket2", "uuid/std"]
+defmt = ["dep:defmt"]
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(ci)'] }

@@ -247,4 +247,22 @@ pub mod errors {
         )]
         NoDataUniversesRegistered(),
     }
+
+    #[cfg(feature = "defmt")]
+    impl defmt::Format for SacnError {
+        fn format(&self, fmt: defmt::Formatter) {
+            match self {
+                #[cfg(feature = "std")]
+                SacnError::Io(_) => {
+                    defmt::write!(fmt, "{}", defmt::Debug2Format(self));
+                }
+                SacnError::Str(_) | SacnError::Uuid(_) => {
+                    defmt::write!(fmt, "{}", defmt::Debug2Format(self));
+                }
+                _ => {
+                    defmt::write!(fmt, "{}", self);
+                }
+            }
+        }
+    }
 }

@@ -14,6 +14,7 @@ use thiserror::Error;
 use uuid::Uuid;
 
 #[derive(Debug, Error)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum ParsePacketError {
     /// When parsing packet invalid data encountered.
     ///
@@ -114,7 +115,7 @@ pub enum ParsePacketError {
     /// # Arguments
     /// msg: A message providing further details (if any) as to why the uuid (used for CID) couldn't be parsed.
     #[error("Error parsing the received UUID: {0}")]
-    UuidError(Uuid),
+    UuidError(#[defmt(Debug2Format)] Uuid),
 
     /// Error parsing received UTF8 string.
     ///
